@@ -5,12 +5,15 @@ from math import sqrt
 from torch.autograd import Variable
 
 class simpleNet(nn.Module):
-	def __init__(self,Y=True):
+	def __init__(self,Y=True, inp_channels=None):
 		super(simpleNet, self).__init__()
 		d = 1
 		if Y == False:
 			d = 3
-		self.input = nn.Conv2d(in_channels=d, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False)
+		if inp_channels is not None:
+			self.input = nn.Conv2d(in_channels=inp_channels, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False)
+		else:
+			self.input = nn.Conv2d(in_channels=d, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False)
 		self.conv1 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False)
 		self.conv2 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False)
 		self.conv3 = nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False)
@@ -45,5 +48,5 @@ class simpleNet(nn.Module):
 
 		out = self.output(self.relu(out))
 		
-		out = torch.add(out, residual)
+		out = torch.add(out, residual[:, :3])
 		return out

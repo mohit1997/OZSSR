@@ -7,6 +7,7 @@ from configs import Config
 from utils import *
 from simplenet import simpleNet
 from laploss import *
+import sys
 
 class ZSSR:
     # Basic current state variables initialization / declaration
@@ -77,7 +78,7 @@ class ZSSR:
         # Prepare TF default computational graph
         # declare model here severs as initial model
         print(self.Y)
-        self.model = simpleNet(self.Y)
+        self.model = simpleNet(self.Y, inp_channels=5)
 
         # Build network computational graph
         #self.build_network(conf)
@@ -87,6 +88,21 @@ class ZSSR:
 
         # The first hr father source is the input (source goes through augmentation to become a father)
         # Later on, if we use gradual sr increments, results for intermediate scales will be added as sources.
+        xv, yv = np.meshgrid(np.arange(self.input.shape[0]), np.arange(self.input.shape[1]), sparse=False, indexing='ij')
+        
+        xv = xv - np.min(xv)
+        xv = xv/np.max(xv)
+
+        yv = yv - np.min(yv)
+        yv = yv/np.max(yv)
+        
+        xv = np.expand_dims(xv, axis=-1)
+        yv = np.expand_dims(yv, axis=-1)
+
+        new_input = np.concatenate([self.input, xv, yv], axis=2)
+        self.raw_input = self.input
+        self.input = new_input
+        
         self.hr_fathers_sources = [self.input]
 
         # We keep the input file name to save the output with a similar name. If array was given rather than path
@@ -188,7 +204,7 @@ class ZSSR:
             lr_son_input = lr_son_input.cuda()
       
         train_output = self.model(lr_son_input)
-        loss = criterion(hr_father,train_output)
+        loss = criterion(hr_father[:, :3], train_output)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -248,16 +264,16 @@ class ZSSR:
 
         # 2. Reconstruction MSE, run for reconstruction- try to reconstruct the input from a downscaled version of it
         self.reconstruct_output = self.forward_pass(self.father_to_son(self.input), self.input.shape)
-        self.mse_rec.append(np.mean(np.ndarray.flatten(np.square(self.input - self.reconstruct_output))))
+        self.mse_rec.append(np.mean(np.ndarray.flatten(np.square(self.raw_input - self.reconstruct_output))))
 
         # 3. True MSE of simple interpolation for reference (only if ground-truth was given)
         interp_sr = imresize(self.input, self.sf, self.output_shape, self.conf.upscale_method)
-        self.interp_mse = (self.interp_mse + [np.mean(np.ndarray.flatten(np.square(self.gt_per_sf - interp_sr)))]
+        self.interp_mse = (self.interp_mse + [np.mean(np.ndarray.flatten(np.square(self.gt_per_sf - interp_sr[:, :, :3])))]
                            if self.gt_per_sf is not None else None)
 
         # 4. Reconstruction MSE of simple interpolation over downscaled input
         interp_rec = imresize(self.father_to_son(self.input), self.sf, self.input.shape[0:2], self.conf.upscale_method)
-        self.interp_rec_mse.append(np.mean(np.ndarray.flatten(np.square(self.input - interp_rec))))
+        self.interp_rec_mse.append(np.mean(np.ndarray.flatten(np.square(self.raw_input - interp_rec[:, :, :3]))))
 
         # Track the iters in which tests are made for the graphics x axis
         self.mse_steps.append(self.iter)
@@ -300,8 +316,8 @@ class ZSSR:
 
             
             # run network forward and back propagation, one iteration (This is the heart of the training)
-            self.train_output = self.forward_backward_pass(self.lr_son, self.hr_father,criterion,optimizer)
-
+            self.train_output = self.forward_backward_pass(self.lr_son, self.hr_father, criterion, optimizer)
+            # sys.exit()
             # Display info and save weights
             if not self.iter % self.conf.display_every:
                 print('sf:', self.sf*self.base_sf, ', iteration: ', self.iter, ', loss: {:.4f}'.format(self.loss[self.iter]))
@@ -340,7 +356,7 @@ class ZSSR:
 
             # fix SR output with back projection technique for each augmentation
             for bp_iter in range(self.conf.back_projection_iters[self.sf_ind]):
-                tmp_output = back_projection(tmp_output, self.input, down_kernel=self.kernel,
+                tmp_output = back_projection(tmp_output, self.raw_input, down_kernel=self.kernel,
                                              up_kernel=self.conf.upscale_method, sf=self.sf)
 
             # save outputs from all augmentations
@@ -351,7 +367,7 @@ class ZSSR:
 
         # Again back projection for the final fused result
         for bp_iter in range(self.conf.back_projection_iters[self.sf_ind]):
-            almost_final_sr = back_projection(almost_final_sr, self.input, down_kernel=self.kernel,
+            almost_final_sr = back_projection(almost_final_sr, self.raw_input, down_kernel=self.kernel,
                                               up_kernel=self.conf.upscale_method, sf=self.sf)
 
         # Now we can keep the final result (in grayscale case, colors still need to be added, but we don't care

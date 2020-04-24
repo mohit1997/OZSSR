@@ -8,6 +8,7 @@ import os
 import glob
 from scipy.ndimage import measurements, interpolation
 from scipy.io import loadmat
+import sys
 
 
 def random_augment(ims,
@@ -134,7 +135,12 @@ def random_augment(ims,
                      .dot(shift_to_center_mat))
 
     # Apply transformation to image and return the transformed image clipped between 0-1
-    return np.clip(warpPerspective(im, transform_mat, (crop_size, crop_size), flags=INTER_CUBIC), 0, 1)
+    lis = []
+    for i in range(0, im.shape[2], 3):
+        lis.append(np.clip(warpPerspective(im[:,:, i:i+3], transform_mat, (crop_size, crop_size), flags=INTER_CUBIC), 0, 1))
+    fin_im = np.concatenate(lis, axis=2)
+
+    return fin_im
 
 
 def back_projection(y_sr, y_lr, down_kernel, up_kernel, sf=None):

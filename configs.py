@@ -22,7 +22,7 @@ class Config:
     crop_size = 128
     noise_std = 0.0  # adding noise to lr-sons. small for real images, bigger for noisy images and zero for ideal case
     init_net_for_each_sf = False  # for gradual sr- should we optimize from the last sf or initialize each time?
-    cuda = True
+    cuda = False
     # Params concerning learning rate policy
     learning_rate = 0.001
     learning_rate_change_ratio = 1.5  # ratio between STD and slope of linear fit, under which lr is reduced
