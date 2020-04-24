@@ -6,6 +6,7 @@ from matplotlib.gridspec import GridSpec
 from configs import Config
 from utils import *
 from simplenet import simpleNet
+from laploss import *
 
 class ZSSR:
     # Basic current state variables initialization / declaration
@@ -272,7 +273,11 @@ class ZSSR:
 
     def train(self):
         #def loss and optimizer
-        criterion = nn.MSELoss()
+        if self.conf.crit == "mse":
+            criterion = nn.MSELoss()
+        elif self.conf.crit == "laploss":
+            device = torch.device('cuda' if self.cuda else 'cpu')
+            criterion = LapLoss(5, 3, device)
         optimizer = torch.optim.Adam(self.model.parameters(),lr = self.learning_rate)
         # main training loop
         for self.iter in range(self.conf.max_iters):
