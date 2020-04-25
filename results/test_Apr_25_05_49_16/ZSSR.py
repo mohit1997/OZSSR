@@ -61,6 +61,7 @@ class ZSSR:
 
     def __init__(self, input_img, conf=Config(), ground_truth=None, kernels=None):
         # Acquire meta parameters configuration from configuration class as a class variable
+        torch.manual_seed(conf.seed)
         self.conf = conf
         self.cuda = conf.cuda
         # Read input image (can be either a numpy array or a path to an image file)
