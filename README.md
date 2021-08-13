@@ -1,6 +1,7 @@
 # OZSSR: ECE 549 Course Project
 --------------------------
 Watch the video [here](https://drive.google.com/file/d/1BaINhmM8GKSS5OZK5qQyTlDTV8Zophrb/view?usp=sharing)
+
 Read the technical report [here](./ECE549_Report.pdf)
 
 
