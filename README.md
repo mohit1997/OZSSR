@@ -1,12 +1,12 @@
-# OZSSR
+# OZSSR: ECE 549 Course Project
 --------------------------
 Watch the video [here](https://drive.google.com/file/d/1BaINhmM8GKSS5OZK5qQyTlDTV8Zophrb/view?usp=sharing)
 
-### modified form  Assaf Shocher
 
 ----------
-ECE 549 Course Project on Online Zero Shot Super-Resolution.
+Online Zero Shot Super-Resolution.
 
+### modified form  Assaf Shocher
 ----------
 
 # "Zero-Shot" Super-Resolution using Deep Internal Learning  (ZSSR)
